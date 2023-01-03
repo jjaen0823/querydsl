@@ -1,11 +1,7 @@
-package com.example.querydsl;
+package com.example.querydsl.infrastructure.persistence.database.entity;
 
-import com.example.querydsl.infrastructure.persistence.database.entity.Member;
-import com.example.querydsl.infrastructure.persistence.database.entity.QMember;
-import com.example.querydsl.infrastructure.persistence.database.entity.Team;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -380,6 +376,17 @@ public class QuerydslBasicTest {
                 .from(member)
                 .fetch();
 
-        results.forEach(System.out::println);
+        results.forEach(t -> assertThat(t.get(Expressions.constant("A"))).isEqualTo("A"));
+    }
+
+    @Test
+    public void concat_stringValue() {
+        String result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .fetchFirst();
+
+        assertThat(result).isEqualTo("member1_21");
+
     }
 }
