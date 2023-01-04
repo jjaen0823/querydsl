@@ -1,12 +1,14 @@
 package com.example.querydsl.infrastructure.persistence.database.entity;
 
 import com.example.querydsl.ui.dto.response.MemberResponseDto;
+import com.example.querydsl.ui.dto.response.QMemberResponseDto;
 import com.example.querydsl.ui.dto.response.UserResponseDto;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import javax.transaction.Transactional;
 import java.util.List;
 
 import static com.example.querydsl.infrastructure.persistence.database.entity.QMember.member;
+import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
@@ -128,8 +131,7 @@ public class QuerydslAdvancedTest {
     public void findUserDtoQuerydsl_field_subQuery_as() {
         QMember subMember = new QMember("subMember");
 
-        /**
-         * ExpressionUtils.as
+        /** ExpressionUtils.as
          * - field, subQuery alias 사용
          * - field alias 는 .as() 사용하는 것 권장
          */
@@ -160,5 +162,16 @@ public class QuerydslAdvancedTest {
                 .fetch();
 
         results.forEach(System.out::println);
+    }
+    
+    @Test
+    public void findDtoByQueryProjection() {
+        MemberResponseDto dto = queryFactory
+                .select(new QMemberResponseDto(member.username, member.age))
+                .from(member)
+                .fetchFirst();
+
+        assertThat(dto.getUsername()).isEqualTo("member1");
+        assertThat(dto.getAge()).isEqualTo(21);
     }
 }
