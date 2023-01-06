@@ -6,9 +6,9 @@ import com.example.querydsl.ui.dto.response.UserResponseDto;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +16,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
-
 import java.util.List;
 
 import static com.example.querydsl.infrastructure.persistence.database.entity.QMember.member;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
@@ -174,4 +173,33 @@ public class QuerydslAdvancedTest {
         assertThat(dto.getUsername()).isEqualTo("member1");
         assertThat(dto.getAge()).isEqualTo(21);
     }
+
+    @Test
+    public void sqlFunction_replace() {
+        List<String> results = queryFactory
+                .select(Expressions.stringTemplate(
+                        "function('replace', {0}, {1}, {2})",
+                        member.username, "member", "Member"
+                ))
+                .from(member)
+                .fetch();
+
+        assertThat(results.stream().allMatch(s -> s.startsWith("Member"))).isTrue();
+    }
+
+    @Test
+    public void sqlFunction_lower() {
+        List<String> results = queryFactory
+//                .select(Expressions.stringTemplate(
+//                        "function('upper', {0})",
+//                        member.username
+//                ))
+                .select(member.username.upper())
+                .from(member)
+                .fetch();
+
+        assertThat(results.stream().allMatch(s -> s.startsWith("member".toUpperCase()))).isTrue();
+    }
+
+
 }
