@@ -1,6 +1,7 @@
 package com.example.querydsl.infrastructure.persistence.database.entity;
 
 import com.example.querydsl.infrastructure.persistence.database.repository.MemberQuerydslRepository;
+import com.example.querydsl.infrastructure.persistence.database.repository.MemberRepository;
 import com.example.querydsl.ui.dto.request.MemberSearchConditionDto;
 import com.example.querydsl.ui.dto.response.MemberTeamResponseDto;
 import com.querydsl.core.BooleanBuilder;
@@ -10,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
@@ -29,6 +32,9 @@ public class QuerydslDynamicTest {
 
     @Autowired
     MemberQuerydslRepository memberQuerydslRepository;
+
+    @Autowired
+    MemberRepository memberRepository;
 
 
     @BeforeEach
@@ -123,12 +129,48 @@ public class QuerydslDynamicTest {
     public void memberSearchConditionTest() {
         List<MemberTeamResponseDto> memberTeamResponseDtoList = memberQuerydslRepository.searchByMemberSearchCondition(
                 MemberSearchConditionDto.builder()
-                        .teamName("teamA")
+                        .username("member1")
+//                        .teamName("teamA")
                         .ageGoe(21)
                         .build()
         );
 
-        assertThat(memberTeamResponseDtoList.size()).isEqualTo(2);
+        assertThat(memberTeamResponseDtoList.size()).isEqualTo(1);
     }
-    
+
+    @Test
+    public void memberSearchConditionTest2() {
+        List<MemberTeamResponseDto> memberTeamResponseDtoList = memberRepository.searchMembers(
+                MemberSearchConditionDto.builder()
+                        .username("member1")
+//                        .teamName("teamA")
+                        .ageGoe(21)
+                        .build()
+        );
+
+        assertThat(memberTeamResponseDtoList.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void memberSearchConditionPageSimpleTest() {
+        PageRequest pageRequest = PageRequest.of(0, 3);
+        Page<MemberTeamResponseDto> results = memberRepository.searchPageSimple(
+                new MemberSearchConditionDto(), pageRequest
+        );
+
+        assertThat(results.getSize()).isEqualTo(3);
+        assertThat(results.getContent()).extracting("username").containsExactly("member1", "member2", "member3");
+    }
+
+    @Test
+    public void memberSearchConditionPageComplexTest() {
+        PageRequest pageRequest = PageRequest.of(1, 2);
+        Page<MemberTeamResponseDto> results = memberRepository.searchPageSimple(
+                new MemberSearchConditionDto(), pageRequest
+        );
+
+        assertThat(results.getSize()).isEqualTo(2);
+        assertThat(results.getContent()).extracting("username").containsExactly( "member3", "member4");
+    }
+
 }

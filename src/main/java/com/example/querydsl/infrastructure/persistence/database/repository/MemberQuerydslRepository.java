@@ -1,10 +1,9 @@
 package com.example.querydsl.infrastructure.persistence.database.repository;
 
 import com.example.querydsl.infrastructure.persistence.database.entity.Member;
-import com.example.querydsl.infrastructure.persistence.database.entity.QTeam;
 import com.example.querydsl.ui.dto.request.MemberSearchConditionDto;
 import com.example.querydsl.ui.dto.response.MemberTeamResponseDto;
-import com.querydsl.core.types.Predicate;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -12,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.management.Query;
 import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
@@ -23,10 +23,10 @@ import static org.springframework.util.StringUtils.hasText;
 
 
 /**
- * - 묵시적 join 은 cross join을 발생 -> 명시적 join (innerJoin)
- * - select 절에 Entity 조회 자제 -> id 값만 가져오는 등으로 변경
- * - Group By 최적화 -> OrderByNull 사용 (조회 결과 100건 이하일 경우 WAS에서 정렬)
- * - 무분별한 DirtyChecking -> Bulk Update 사용 (이 경우는 1차, 2차 cache가 갱신되지 않으므로 flush, clear 해줘야 함)
+ * 1. 묵시적 join 은 cross join을 발생 -> 명시적 join (innerJoin)
+ * 2. select 절에 Entity 조회 자제 -> id 값만 가져오는 등으로 변경
+ * 3. Group By 최21적화 -> OrderByNull 사용 (조회 결과 100건 이하일 경우 WAS에서 정렬)
+ * 4. 무분별한 DirtyChecking -> Bulk Update 사용 (이 경우는 1차, 2차 cache가 갱신되지 않으므로 flush, clear 해줘야 함)
  */
 
 @Transactional
@@ -96,15 +96,9 @@ public class MemberQuerydslRepository {
                         teamNameEq(condition.getTeamName()),
                         userAgeGoe(condition.getAgeGoe()),
                         userAgeLoe(condition.getAgeLoe())
+//                        memberSearchCondition(condition)
                 )
                 .fetch();
-    }
-
-    private Predicate memberSearchCondition(MemberSearchConditionDto condition) {
-        return usernameEq(condition.getUsername())
-                .and(teamNameEq(condition.getTeamName()))  // NPE
-                .and(userAgeGoe(condition.getAgeGoe()))
-                .and(userAgeLoe(condition.getAgeLoe()));
     }
 
     private BooleanExpression usernameEq(String username) {
@@ -116,12 +110,24 @@ public class MemberQuerydslRepository {
     }
 
     private BooleanExpression userAgeGoe(Integer age) {
-        return isEmpty(age) ? member.age.goe(age): null;
+        return age != null ? member.age.goe(age) : null;
     }
 
     private BooleanExpression userAgeLoe(Integer age) {
-        return isEmpty(age) ? member.age.goe(age): null;
+        return age != null ? member.age.loe(age) : null;
     }
 
+    private BooleanExpression ageBetween(Integer ageGoe, Integer ageLoe) {
+        return userAgeGoe(ageGoe).and(userAgeLoe(ageLoe));
+    }
+
+    private BooleanExpression memberSearchCondition(MemberSearchConditionDto condition) {
+//        BooleanBuilder booleanBuilder = new BooleanBuilder();
+//        booleanBuilder.
+        return usernameEq(condition.getUsername())
+                .and(teamNameEq(condition.getTeamName()))  // NPE -> usernameEq이 Null 이면 .and() method가 없기 떄문에 NPE 발생 -> 첫 번째 조건만 null이 아니면 됨
+                .and(userAgeGoe(condition.getAgeGoe()))
+                .and(userAgeLoe(condition.getAgeLoe()));
+    }
 
 }

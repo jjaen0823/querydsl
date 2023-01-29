@@ -1,7 +1,6 @@
 package com.example.querydsl.infrastructure.persistence.database.repository;
 
 import com.example.querydsl.infrastructure.persistence.database.entity.Member;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,7 +10,7 @@ import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
@@ -25,6 +24,9 @@ class MemberRepositoryTest {
 
     @Autowired
     MemberQuerydslRepository memberQuerydslRepository;
+
+    @Autowired
+    MemberRepository memberRepository;
 
     @Test
     public void jpaRepositoryTest() {
@@ -69,7 +71,24 @@ class MemberRepositoryTest {
 
         assertThat(memberQuerydslRepository.exist(1L)).isTrue();
         assertThat(memberQuerydslRepository.exist(2L)).isFalse();
+    }
 
+    @Test
+    public void repositoryInterfaceTest() {
+        Member member = Member.builder().username("member1").age(21).build();
+        memberRepository.save(member);
+
+        // findById
+        Optional<Member> findMemberById = memberRepository.findById(member.getId());
+        assertThat(findMemberById.get()).isEqualTo(member);
+
+        // findAll
+        List<Member> findMembers = memberRepository.findAll();
+        assertThat(findMembers).containsExactly(member);
+
+        // findByUsername
+        List<Member> findMembersByUsername = memberRepository.findByUsername("member1");
+        assertThat(findMembersByUsername).containsExactly(member);
     }
 
 }
